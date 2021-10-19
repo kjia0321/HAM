@@ -1,0 +1,112 @@
+using System.Collections;
+using System.Collections.Generic;
+using UnityEngine;
+using UnityEngine.UI;
+using UnityEngine.SceneManagement;
+
+public class GameManager : MonoBehaviour
+{
+    [SerializeField]
+    public Slider fullBar; // 포만감 = hpBar (hpBar를 fullBar로 이름을 바꾸었습니다)
+    public Text Full;
+
+    private float maxFull = 1000;
+    private static float curFull = 100;
+
+    //유니티에서 해당 부분을 조절할 수 있다. Text 부분은 꼭 값을 할당해줄 것.
+    public static int[] snackAmount = new int[5];
+    public Text[] snackAmountText;
+
+    //표정 아이콘 변화하는 부분
+    [Header("Set in Inspector : Face")]
+    public Image face;
+    public Sprite face_90;
+    public Sprite face_60;
+    public Sprite face_30;
+
+    public GameObject Player;
+    private static Vector2 curPlayerPos;
+
+    void Start()
+    {
+        //Player.transform.position = curPlayerPos;
+        fullBar.value = (float)curFull / (float)maxFull;
+    }
+
+    void Update()
+    {
+        curPlayerPos = Player.transform.position;
+
+        if (Input.GetButton("Horizontal") || Input.GetButton("Vertical"))
+        {
+            curFull -= 5 * Time.deltaTime;
+        }
+
+        if (curFull <= 0)
+        {
+            SceneManager.LoadScene("GameoverScene");
+        }
+
+        Full.text = curFull.ToString("F0") + " / 1000";
+        snackAmountText[0].text = $"수량: {snackAmount[0]}개";
+        //아래로 새로운 간식에 대한 값...
+
+        HandleHp();
+        FaceChange();
+        AddSnack();
+        UseSnake();
+    }
+
+    private void HandleHp()
+    {
+        fullBar.value = (float)curFull / (float)maxFull;
+    }
+
+    private void FaceChange()
+    {
+        //표정 아이콘 변화 함수
+        if (fullBar.value > 0.6)
+        {
+            face.sprite = face_90;
+        }
+        else if (fullBar.value <= 0.6 && fullBar.value > 0.3)
+        {
+            face.sprite = face_60;
+        }
+        else if (fullBar.value <= 0.3 && fullBar.value > 0)
+        {
+            face.sprite = face_30;
+        }
+    }
+
+    //미니게임 결과 받기...
+    public void AddSnack()
+    {
+        if (DropMinigameManager.getSnack == true)
+        {
+            snackAmount[0]++;
+            DropMinigameManager.getSnack = false;
+        }
+    }
+
+    public void UseSnake()
+    {
+        //임의로 키를 넣어서 값이 오르게 했다.
+        //이후에 간식을 선택해서 키를 누르면 포만감이 오르도록 조정.
+        //간식 포만감은 10, 15, 20, 25, 30으로 각 1~3개
+        if (curFull < 100 && snackAmount[0] > 0 && Input.GetKeyDown(KeyCode.Z))
+        {
+            if (curFull + 30 < 1000)
+            {
+                snackAmount[0]--;
+                curFull += 90;
+            }
+            else
+            {
+
+                snackAmount[0]--;
+                curFull = maxFull;
+            }
+        }
+    }
+}
