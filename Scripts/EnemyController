@@ -1,0 +1,42 @@
+using System.Collections;
+using System.Collections.Generic;
+using UnityEngine;
+using UnityEngine.UI;
+
+
+public class EnemyController : MonoBehaviour
+{
+    GameObject player;
+ 
+    void Start()
+    {
+        this.player = GameObject.FindWithTag("Player");
+    }
+
+    void Update()
+    {
+        transform.Translate(0, -5f * Time.deltaTime, 0); //등속낙하, 프레임마다 (update)
+
+        if (transform.position.y < -5.0f)
+        {
+            Destroy(gameObject);
+        }
+    }
+
+    private void OnTriggerEnter2D(Collider2D collision)
+    {
+        if (GameObject.FindWithTag("Player"))
+        {
+            DropMinigameManager.life--;
+            Destroy(gameObject);
+
+            //    GameObject manager = GameObject.Find("GameManager");
+            //   manager.GetComponent<GameManager>();
+
+            //   life--;
+            //   manager.UpdateLife(life);
+        }
+    }
+}
+
+
