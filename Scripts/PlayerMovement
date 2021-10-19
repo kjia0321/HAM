@@ -1,0 +1,184 @@
+using System.Collections;
+using System.Collections.Generic;
+using UnityEngine;
+using UnityEngine.SceneManagement;
+
+public class PlayerMovement : MonoBehaviour
+{
+    static public PlayerMovement H;
+
+    [Header("Set in Inspector")]
+    public float movePower = 1.0f;
+    public float jumpPower = 1.0f;    //점프 기능, 없으면 제거
+
+    Rigidbody2D hRigid;
+    SpriteRenderer hRend;           //좌우 뒤집을 때 사용
+    Animator hAnimator;             //애니메이션
+
+    Vector3 hMovement;
+    private bool isJumping = false;     //점프 기능, 필요 없으면 제거 
+
+    private bool isMoveX = true;        //애니메이션에 쓰는 기능
+    private bool isMoveY = true;
+
+    [Header("Set Motion")]
+    public Sprite backMotionState;
+    public Sprite frontMotionState;
+    public Sprite sideMotionState;
+
+    [Header("Set MiniGameObject")]  //RoomScene에서 설정해야 함!
+    public GameObject Desk;
+
+    private void Awake()
+    {
+        //Player가 하나 이상 만들어지면 에러 반환.
+        if (H == null)
+        {
+            H = this;
+        }
+        else
+        {
+            Debug.LogError("<color=red>Player.Awake()</color> - attempted to assign second Player.H!");
+        }
+    }
+
+    void Start()
+    {
+        hRigid = gameObject.GetComponent<Rigidbody2D>();
+        hRend = gameObject.GetComponentInChildren<SpriteRenderer>();
+        hAnimator = GetComponent<Animator>();
+    }
+
+    void Update()
+    {
+        //씬 전환 시, 상하좌우 움직일 수 있도록 하는 부분
+        if (SceneManager.GetActiveScene().name == "RoomScene")
+        {
+            hRigid.gravityScale = 0.0f;
+        }
+        else
+        {
+            //점프 기능, 필요 없으면 제거
+            if (Input.GetButtonDown("Jump"))
+            {
+                isJumping = true;
+            }
+
+            Vector3 hPos = transform.position;
+
+            //화면 밖으로 나가지 못하게 하는 부분
+            Vector3 camPos = Camera.main.WorldToViewportPoint(transform.position);
+            camPos.x = Mathf.Clamp01(camPos.x);
+            camPos.y = Mathf.Clamp01(camPos.y);
+
+            hPos = Camera.main.ViewportToWorldPoint(camPos);
+            transform.position = hPos;
+        }
+    }
+
+    private void FixedUpdate()
+    {
+        PlayerMotionState();
+        PlayerMove();
+        PlayerJump();
+    }
+
+    public void PlayerMove()
+    {
+        //상-하나 좌-우를 동시에 누르면 움직이지는 않는데 포만감이 감소하는 문제 발견...
+        Vector3 hMoveVelocity = Vector3.zero;
+
+        //상하 움직임
+        if (SceneManager.GetActiveScene().name == "RoomScene")
+        {
+            if (Input.GetAxisRaw("Vertical") > 0)
+            {
+                hMoveVelocity = Vector3.up;
+                hRend.flipY = true;
+            }
+            else if (Input.GetAxisRaw("Vertical") < 0)
+            {
+                hMoveVelocity = Vector3.down;
+                hRend.flipY = false;
+            }
+            else if (Input.GetAxisRaw("Vertical") == 0)
+            {
+                hRend.flipY = false;
+            }
+        }
+
+        //좌우 움직임
+        if (Input.GetAxisRaw("Horizontal") < 0)
+        {
+            hMoveVelocity = Vector3.left;
+            hRend.flipY = false;
+            hRend.flipX = true;
+
+        }
+        else if (Input.GetAxisRaw("Horizontal") > 0)
+        {
+            hMoveVelocity = Vector3.right;
+            hRend.flipY = false;
+            hRend.flipX = false;
+        }
+
+        //실질적으로 이동에 관여하는 부분...
+        transform.position += hMoveVelocity * movePower * Time.deltaTime * 7;
+    }
+
+    //점프 기능, 필요 없으면 제거
+    public void PlayerJump()
+    {
+        if (!isJumping)
+        {
+            return;
+        }
+
+        hRigid.velocity = Vector2.zero;
+
+        Vector2 jumpVelocity = new Vector2(0, jumpPower);
+        hRigid.AddForce(jumpVelocity * 5, ForceMode2D.Impulse);
+
+        isJumping = false;
+    }
+
+    public void PlayerMotionState()
+    {
+        if(Input.GetAxisRaw("Horizontal") != 0)
+        {
+            isMoveX = true;
+        }
+        else
+        {
+            isMoveX = false;
+        }
+
+        if(Input.GetAxisRaw("Vertical") != 0 && SceneManager.GetActiveScene().name == "RoomScene")
+        {
+            isMoveY = true;
+        }
+        else
+        {
+            isMoveY = false;
+        }
+
+        hAnimator.SetBool("MoveX", isMoveX);
+        hAnimator.SetBool("MoveY", isMoveY);
+    }
+
+    //충돌이 일어나는 것을 검사, 충돌이 되었다면 이동한다.
+    private void OnTriggerEnter2D(Collider2D collision)
+    {
+        if (SceneManager.GetActiveScene().name == "CageScene")
+        {
+            SceneManager.LoadScene("RoomScene");
+        }
+
+        //아래로는 미니게임들...
+        if (collision.gameObject.name == "Desk")    //Z키로 이동.
+        {
+            SceneManager.LoadScene("DropScene");
+            //충돌하면 바로 이동하게 설계되어 있다... 이후 창을 하나 띄우든지 해서 해결해야 함.
+        }
+    }
+}
