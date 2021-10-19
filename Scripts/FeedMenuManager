@@ -1,0 +1,44 @@
+using System.Collections;
+using System.Collections.Generic;
+using UnityEngine;
+using UnityEngine.UI;
+
+public class FeedMenuManager : MonoBehaviour
+{
+    public Button feedMenuBtn;
+    public GameObject[] snack;
+
+    public bool state = false;
+    private Animator uiAni;
+
+    void Start()
+    {
+        uiAni = this.GetComponent<Animator>();
+    }
+
+    void Update()
+    {
+        //마우스 입력 관련해서는 보완 필요
+        if (Input.GetKeyDown(KeyCode.Tab) || (Input.GetMouseButtonUp(0)))
+        {
+            state = !state;
+            if (state == true)
+            {
+                uiAni.SetTrigger("Show");
+            }
+            else if (state == false)
+            {
+                uiAni.SetTrigger("Hide");
+            }
+        }
+
+        if(GameManager.snackAmount[0] < 1)
+        {
+            snack[0].SetActive(false);
+        }
+        else
+        {
+            snack[0].SetActive(true);
+        }
+    }
+}
